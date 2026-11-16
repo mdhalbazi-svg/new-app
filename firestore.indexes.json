@@ -1,0 +1,15 @@
+{
+  "indexes": [
+    { "collectionGroup": "reports", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]},
+    { "collectionGroup": "reports", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"district","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]},
+    { "collectionGroup": "reports", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"geohash","order":"ASCENDING"}]},
+    { "collectionGroup": "reports", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath":"ownerId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]},
+    { "collectionGroup": "possible_matches", "queryScope": "COLLECTION", "fields": [
+      {"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"confidence","order":"DESCENDING"}]}
+  ],
+  "fieldOverrides": []
+}

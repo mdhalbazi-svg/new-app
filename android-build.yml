@@ -1,0 +1,80 @@
+name: Android and Backend CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lost-found-pakistan/backend/functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run build
+      - run: npm test
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lost-found-pakistan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build debug APK
+        env:
+          ORG_GRADLE_PROJECT_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          ORG_GRADLE_PROJECT_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          ORG_GRADLE_PROJECT_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          ORG_GRADLE_PROJECT_FIREBASE_SENDER_ID: ${{ secrets.FIREBASE_SENDER_ID }}
+        run: gradle :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lost-found-debug-apk
+          path: lost-found-pakistan/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+      - name: Decode release keystore
+        env:
+          KS: ${{ secrets.KEYSTORE_BASE64 }}
+        if: env.KS != ''
+        run: echo "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
+      - name: Build signed release
+        env:
+          KS: ${{ secrets.KEYSTORE_BASE64 }}
+          ORG_GRADLE_PROJECT_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          ORG_GRADLE_PROJECT_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          ORG_GRADLE_PROJECT_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          ORG_GRADLE_PROJECT_FIREBASE_SENDER_ID: ${{ secrets.FIREBASE_SENDER_ID }}
+          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        if: env.KS != ''
+        run: |
+          gradle :app:bundleRelease \
+            -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+      - uses: actions/upload-artifact@v4
+        env:
+          KS: ${{ secrets.KEYSTORE_BASE64 }}
+        if: env.KS != ''
+        with:
+          name: lost-found-release-aab
+          path: lost-found-pakistan/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
